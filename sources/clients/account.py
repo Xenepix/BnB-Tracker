@@ -30,7 +30,7 @@ class Account:
                      "password": password_hash}
         vault_path = get_vault_path() + 'hash.json'
         with open(vault_path, 'w') as vault:
-            json.dump(hash_data, vault)
+            json.dump(hash_data, vault, indent = 4)
         os.chmod(vault_path, 0o600)
         vault.close()
 
