@@ -3,7 +3,7 @@ import json
 from uuid import uuid4
 from pprint import pprint
 def get_tokens():
-    with open('../../keys/truelayer_keys.json') as f:
+    with open('../../vault/truelayer_keys.json') as f:
         keys = json.load(f)
     url = "https://auth.truelayer-sandbox.com/connect/token"
 
@@ -31,7 +31,7 @@ def load_tokens():
     return tokens.get('access_token'), tokens.get('refresh_token')
 
 def generate_link():
-    with open('../../keys/truelayer_keys.json') as f:
+    with open('../../vault/truelayer_keys.json') as f:
         keys = json.load(f)
     url = "https://auth.truelayer-sandbox.com/v1/authuri"
     credentials = get_tokens().get("access_token")

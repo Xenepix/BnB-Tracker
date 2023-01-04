@@ -1,2 +1,2 @@
-# Budget-Tracker
-A tracker for your banking account
+# BnB Tracker
+A tracker for your budget and your bank !

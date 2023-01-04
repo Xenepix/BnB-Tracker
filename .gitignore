@@ -131,7 +131,7 @@ dmypy.json
 # Pycharm
 .idea/
 
-# Secrets keys
-keys/
+# Secrets vault
+vault/
 tests/nordigen/data/
 tests/truelayer/data/

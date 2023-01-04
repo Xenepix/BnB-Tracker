@@ -3,9 +3,9 @@ import requests
 from pprint import pprint
 
 
-# Import keys
+# Import vault
 def get_keys():
-    with open('../../keys/nordigen_keys.json') as f:
+    with open('../../vault/nordigen_keys.json') as f:
         credentials = json.load(f)
     return credentials
 
