@@ -31,6 +31,7 @@ class Account:
         vault_path = get_project_path() + '/vault/hash.json'
         with open(vault_path, 'w') as vault:
             json.dump(hash_data, vault)
+        os.chmod(vault_path, 0o600)
         vault.close()
 
     @staticmethod
