@@ -17,6 +17,21 @@ class User:
 
         self._vault_path: str = get_vault_path() + 'account_secrets.json'
         self.manager = UserSecretManager(**kwargs)
+        self.__password: str | None = None
+        self._allowed_transmitters = ['NordigenClient']
+
+    def get_password(self, transmitter: object) -> str:
+        """
+        Get the password
+
+        Args:
+            - transmitter (object): The transmitter that ask for the password
+        """
+        if self.__password is None:
+            raise ValueError('User is not opened')
+        if transmitter.__class__.__name__ not in self._allowed_transmitters:
+            raise ValueError('Wrong transmitter')
+        return self.__password
 
     def open(self, password: str) -> dict[str, str]:
         """
@@ -34,20 +49,26 @@ class User:
             - dict[str, str]: Status
         """
         try:
-            with open(self._vault_path, 'r') as account_secrets:
-                encrypted_salt = json.load(account_secrets).get('salt')
-            account_secrets.close()
-
-            try:
-                self.manager.decrypt_salt(password, encrypted_salt)
-            except InvalidToken:
+            res = self.manager.verify_password(password = password)
+            if res:
+                self.__password = password
+                return {'success': 'User opened'}
+            else:
                 return {'fail': 'Password is wrong'}
-            if not self.manager.verify_password(password):
-                return {'fail': 'Password is wrong'}
-
         except FileNotFoundError:
             return {'error': 'User doesn\'t have an account'}
 
+    def create(self, password) -> None:
+        """
+        Create an account
+        """
+        # Check if the user already have an account
+        try:
+            with open(self._vault_path, 'r') as account_secrets:
+                json.load(account_secrets)
+            account_secrets.close()
+        except FileNotFoundError:
+            self.manager.set_password(password)
+            self.__password = password
         else:
-            return {'success': 'User opened'}
-
+            raise FileExistsError('User already have an account')

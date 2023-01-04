@@ -73,8 +73,23 @@ class UserSecretManager:
     def verify_password(self, password: str) -> bool:
         """
         Verify the password of the account
+
+        Raises:
+            - FileNotFoundError: If the vault is not found
         """
+        with open(self._vault_path, 'r') as account_secrets:
+            encrypted_salt = json.load(account_secrets).get('salt')
+        account_secrets.close()
+        try:
+            salt = self.decrypt_salt(password, encrypted_salt)
+        except InvalidToken:
+            return False
+
         with open(self._vault_path, 'r') as vault:
             hash_pwd = json.load(vault).get("password")
         vault.close()
-        return argon2.using(salt = self._salt.encode()).verify(password, hash_pwd)
+
+        if argon2.using(salt = self._salt.encode()).verify(password, hash_pwd):
+            self._salt = salt
+            return True
+        return False
