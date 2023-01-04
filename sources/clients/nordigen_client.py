@@ -12,37 +12,26 @@ class NordigenClient:
 
     def __init__(self, **kwargs) -> None:
         self._vault_path: str = get_vault_path() + 'nordigen_secrets.json'
+        self._salt = kwargs.get('salt', os.environ.get('BNB_TRACKER_SALT', ''))
 
-    @staticmethod
-    def _generate_key(password: str, salt: bytes | str, **kwargs) -> bytes:
+    def _generate_key(self, password: str, iterations: int = 100_000, key_length: int = 32) -> bytes:
         """
         Generate a key from password and salt
 
         Args:
-            - secret_id (str):
-            - secret_key (str):
             - password (str): User password
-            - salt (str): User salt
-
-        kwargs:
             - iterations (int): Number of iterations for the key generation (default: 100_000)
             - key_length (int): Length of the key (default: 32)
         """
-        # Generate a key
-        iterations = kwargs.get('iterations', 100_000)
-        key_length = kwargs.get('key_length', 32)
-        if isinstance(salt, str):
-            salt = salt.encode()
-
         kdf = PBKDF2HMAC(
             algorithm = hashes.SHA256(),
             length = key_length,
-            salt = salt,
+            salt = self._salt.encode(),
             iterations = iterations)
         key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
         return key
 
-    def set_secrets(self, secret_id: str, secret_key: str, password: str, salt: bytes | str) -> None:
+    def set_secrets(self, secret_id: str, secret_key: str, password: str) -> None:
         """
         Set the secrets in the vault
 
@@ -50,9 +39,9 @@ class NordigenClient:
             - secret_id (str):
             - secret_key (str):
             - password (str): User password
-            - salt (str): User salt
         """
-        key = self._generate_key(password, salt)
+        key = self._generate_key(password)
+
         # Encrypt the secrets
         fernet = Fernet(key)
         encrypted_secret_id = fernet.encrypt(secret_id.encode())
@@ -67,18 +56,17 @@ class NordigenClient:
         os.chmod(self._vault_path, 0o600)
         vault.close()
 
-    def get_secrets(self, password: str, salt: bytes | str) -> dict[str, str]:
+    def get_secrets(self, password: str) -> dict[str, str]:
         """
         Get the secrets from the vault
 
         Args:
             - password (str): User password
-            - salt (str): User salt
 
         Returns:
-            - dict: Secrets (secret_id, secret_key)
+            - Secrets (dict[str, str]): (secret_id, secret_key)
         """
-        key = self._generate_key(password, salt)
+        key = self._generate_key(password)
 
         # Get the secrets from the vault
         with open(self._vault_path, 'r') as vault:
@@ -93,13 +81,15 @@ class NordigenClient:
 
 
 if __name__ == '__main__':
-    rd_salt = os.urandom(16)
+    rd_salt = os.urandom(64).hex()
     rd_password = 'password'
     rd_secret_id = 'secret_id'
     rd_secret_key = 'secret_key'
 
-    assert NordigenClient._generate_key('password', rd_salt) == NordigenClient._generate_key('password', rd_salt)
-    NordigenClient().set_secrets(rd_secret_id, rd_secret_key, rd_password, rd_salt)
-    keys = NordigenClient().get_secrets(rd_password, rd_salt)
+    assert NordigenClient(salt = rd_salt)._generate_key('password') == NordigenClient(salt = rd_salt)._generate_key('password')
+    NordigenClient().set_secrets(rd_secret_id, rd_secret_key, rd_password)
+    keys = NordigenClient().get_secrets(rd_password)
     assert keys.get('secret_id') == rd_secret_id
     assert keys.get('secret_key') == rd_secret_key
+
+
