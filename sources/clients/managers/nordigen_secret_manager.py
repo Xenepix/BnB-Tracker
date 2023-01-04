@@ -11,9 +11,9 @@ from tools import get_vault_path
 class NordigenSecretManager:
     """ Class for managing Nordigen secrets. """
 
-    def __init__(self, client) -> None:
+    def __init__(self, salt) -> None:
         self._vault_path: str = get_vault_path() + 'nordigen_secrets.json'
-        self._salt = client.manager.salt
+        self._salt = salt
 
     def _generate_key(self, password: str, iterations: int = 100_000, key_length: int = 32) -> bytes:
         """
