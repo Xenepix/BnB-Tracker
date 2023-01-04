@@ -5,15 +5,23 @@ import base64
 
 from cryptography.fernet import Fernet, InvalidToken
 from passlib.hash import argon2
+from copy import copy
+
 from tools import get_vault_path
 
 
-class AccountSecretManager:
+class UserSecretManager:
 
     def __init__(self, **kwargs) -> None:
         self._vault_path: str = get_vault_path() + 'account_secrets.json'
         self._salt_length: int = kwargs.get('salt_length', 64)
         self._salt: str | None = None
+
+    @property
+    def salt(self) -> str:
+        if self._salt is None:
+            raise ValueError("Salt is not set")
+        return copy(self._salt)
 
     def encrypt_salt(self, password: str) -> str:
         """

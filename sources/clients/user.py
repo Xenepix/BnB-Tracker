@@ -1,34 +1,29 @@
 import json
 from cryptography.fernet import InvalidToken
 
-from .managers import AccountSecretManager
+from .managers import UserSecretManager
 from tools import get_vault_path
 
 
-class Account:
+class User:
 
     def __init__(self, **kwargs) -> None:
         """
         Build and account
 
         kwargs:
-            - first_name (str):
-            - last_name (str):
             - salt_length (int): Length of the salt (default: 64)
         """
-        # User data
-        self._first_name: str | None = kwargs.get('first_name')
-        self._last_name: str | None = kwargs.get('last_name')
 
         self._vault_path: str = get_vault_path() + 'account_secrets.json'
-        self.manager = AccountSecretManager(**kwargs)
+        self.manager = UserSecretManager(**kwargs)
 
     def open(self, password: str) -> dict[str, str]:
         """
         Open the account. User must have a account
 
         Status:
-            - 'success': Account opened
+            - 'success': User opened
             - 'error': User doesn't have an account
             - 'fail': Password is wrong
 
@@ -54,9 +49,5 @@ class Account:
             return {'error': 'User doesn\'t have an account'}
 
         else:
-            return {'success': 'Account opened'}
+            return {'success': 'User opened'}
 
-
-
-if __name__ == '__main__':
-    a = Account(first_name = 'John', last_name = 'Doe')
