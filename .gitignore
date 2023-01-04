@@ -133,3 +133,5 @@ dmypy.json
 
 # Secrets keys
 keys/
+tests/nordigen/data/
+tests/truelayer/data/
