@@ -5,8 +5,13 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 
+from tools import get_vault_path
+
 
 class NordigenClient:
+
+    def __init__(self, **kwargs) -> None:
+        self._vault_path: str = get_vault_path() + 'nordigen_secrets.json'
 
     @staticmethod
     def _generate_key(password: str, salt: bytes | str, **kwargs) -> bytes:
@@ -57,9 +62,9 @@ class NordigenClient:
         secrets_data = {"secret_id": encrypted_secret_id.decode(),
                         "secret_key": encrypted_secret_key.decode()}
 
-        with open('secrets.json', 'w') as vault:
+        with open(self._vault_path, 'w') as vault:
             json.dump(secrets_data, vault, indent = 4)
-        os.chmod('secrets.json', 0o600)
+        os.chmod(self._vault_path, 0o600)
         vault.close()
 
     def get_secrets(self, password: str, salt: bytes | str) -> dict[str, str]:
@@ -76,7 +81,7 @@ class NordigenClient:
         key = self._generate_key(password, salt)
 
         # Get the secrets from the vault
-        with open('secrets.json', 'r') as vault:
+        with open(self._vault_path, 'r') as vault:
             secrets_data = json.load(vault)
         vault.close()
 
