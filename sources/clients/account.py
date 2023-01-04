@@ -1,7 +1,7 @@
-import os
 import json
+from cryptography.fernet import InvalidToken
 
-from passlib.hash import argon2
+from .managers import AccountSecretManager
 from tools import get_vault_path
 
 
@@ -12,42 +12,51 @@ class Account:
         Build and account
 
         kwargs:
-            - first_name: str
-            - last_name: str
+            - first_name (str):
+            - last_name (str):
+            - salt_length (int): Length of the salt (default: 64)
         """
-        self._first_name: None | str = kwargs.get('first_name')
-        self._last_name: None | str = kwargs.get('last_name')
+        # User data
+        self._first_name: str | None = kwargs.get('first_name')
+        self._last_name: str | None = kwargs.get('last_name')
 
-    @staticmethod
-    def set_password(password: str) -> None:
-        """
-        Set the password of the account
-        """
-        salt = os.urandom(16)
-        password_hash = argon2.using(salt = salt).hash(password)
-        # Save have in the vault
-        hash_data = {"salt": salt.hex(),
-                     "password": password_hash}
-        vault_path = get_vault_path() + 'hash.json'
-        with open(vault_path, 'w') as vault:
-            json.dump(hash_data, vault, indent = 4)
-        os.chmod(vault_path, 0o600)
-        vault.close()
+        self._vault_path: str = get_vault_path() + 'account_secrets.json'
+        self.manager = AccountSecretManager(**kwargs)
 
-    @staticmethod
-    def verify_password(password: str) -> bool:
+    def open(self, password: str) -> dict[str, str]:
         """
-        Verify the password of the account
+        Open the account. User must have a account
+
+        Status:
+            - 'success': Account opened
+            - 'error': User doesn't have an account
+            - 'fail': Password is wrong
+
+        Args:
+            - password (str): User password
+
+        Returns:
+            - dict[str, str]: Status
         """
-        vault_path = get_vault_path() + 'hash.json'
-        with open(vault_path, 'r') as vault:
-            hash_data = json.load(vault)
-        vault.close()
-        salt = hash_data.get('salt').encode()
-        return argon2.using(salt = salt).verify(password, hash_data.get('password'))
+        try:
+            with open(self._vault_path, 'r') as account_secrets:
+                encrypted_salt = json.load(account_secrets).get('salt')
+            account_secrets.close()
+
+            try:
+                self.manager.decrypt_salt(password, encrypted_salt)
+            except InvalidToken:
+                return {'fail': 'Password is wrong'}
+            if not self.manager.verify_password(password):
+                return {'fail': 'Password is wrong'}
+
+        except FileNotFoundError:
+            return {'error': 'User doesn\'t have an account'}
+
+        else:
+            return {'success': 'Account opened'}
+
 
 
 if __name__ == '__main__':
     a = Account(first_name = 'John', last_name = 'Doe')
-    a.set_password('password')
-    print(a.verify_password('password'))
