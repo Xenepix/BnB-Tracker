@@ -1,5 +1,4 @@
 import json
-from cryptography.fernet import InvalidToken
 
 from .managers import UserSecretManager
 from tools import get_vault_path
